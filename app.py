@@ -16,7 +16,8 @@ from PIL import Image
 sys.path.append(os.path.join(os.getcwd(), 'XMem'))
 
 from model.network import XMem
-from inference.inference_core import InferenceCore
+# from inference.inference_core import InferenceCore # Use custom core for occlusion handling
+from inference_core_custom import InferenceCore
 from segment_anything import sam_model_registry, SamPredictor
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -143,8 +144,8 @@ def run_tracking(progress=gr.Progress()):
         'key_dim': 64,
         'value_dim': 512,
         'num_prototypes': 128,
-        'min_mid_term_frames': 5,      # 改回 5
-        'max_mid_term_frames': 10,     # 改回 10
+        'min_mid_term_frames': 10,      # 改为 10 (增加短期记忆容量)
+        'max_mid_term_frames': 20,     # 改为 20 (增加短期记忆容量)
         'max_long_term_elements': 10000, # 改回 10000 (让它记得更久)
         'mem_every': 5,
         'deep_update_every': -1,
