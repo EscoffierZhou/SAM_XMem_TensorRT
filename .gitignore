@@ -1,13 +1,27 @@
-# Models
+# Large model files (download separately)
 *.pth
-*.onnx
 *.engine
-*.data
+*.onnx
+*.onnx.data
 
-# Build
+# Build directories
 build/
 cmake-build-debug/
-__pycache__/
 
-# Videos
+# Output files
+output/*.mp4
+tracking_result.mp4
 *.mp4
+
+# IDE files
+.idea/
+.vscode/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# System files
+.DS_Store
+Thumbs.db
