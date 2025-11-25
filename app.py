@@ -12,7 +12,7 @@ import time
 import gradio as gr
 from PIL import Image
 
-# === 1. 路径与环境配 ?===
+# === 1. 路径与环境配置 ===
 sys.path.append(os.path.join(os.getcwd(), 'XMem'))
 
 from model.network import XMem
@@ -26,12 +26,13 @@ print(f"🚀 Running on: {device}")
 
 # --- 加载 XMem (FP32 + Autocast) ---
 print("Loading XMem model...")
+# 保持 FP32 权重，依靠 Autocast 和 no_grad 优化显存
 network = XMem(config={'enable_long_term': True, 'enable_short_term': True}).to(device).eval()
 xmem_checkpoint = 'XMem.pth'
 
 def load_xmem_weights(model, path):
     if not os.path.exists(path):
-        print(f" ?Error: Weights not found at {path}")
+        print(f"❌ Error: Weights not found at {path}")
         return
     try:
         checkpoint = torch.load(path, map_location='cpu')
@@ -39,9 +40,9 @@ def load_xmem_weights(model, path):
         elif 'model' in checkpoint: state_dict = checkpoint['model']
         else: state_dict = checkpoint
         model.load_state_dict(state_dict, strict=False)
-        print(f" ?XMem weights loaded successfully from {path}")
+        print(f"✅ XMem weights loaded successfully from {path}")
     except Exception as e:
-        print(f"Failed to load XMem weights: {e}")
+        print(f"❌ Failed to load XMem weights: {e}")
 
 load_xmem_weights(network, xmem_checkpoint)
 
@@ -51,9 +52,9 @@ sam_checkpoint = "sam_vit_b_01ec64.pth"
 sam = sam_model_registry["vit_b"](checkpoint=sam_checkpoint)
 sam.to(device=device)
 predictor = SamPredictor(sam)
-print(" ?SAM Loaded!")
+print("✅ SAM Loaded!")
 
-# === 3. 全局===
+# === 3. 全局状态 ===
 class TrackerState:
     def __init__(self):
         self.cap = None
@@ -76,14 +77,14 @@ def on_video_upload(video_path):
     # BGR -> RGB
     state.first_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    print(" ?Extracting SAM features for the first frame...")
+    print("⚡ Extracting SAM features for the first frame...")
     predictor.set_image(state.first_frame)
     state.mask = None
     return state.first_frame
 
 def on_click(evt: gr.SelectData):
     if state.first_frame is None: return None
-    print(f"🖱 ?Clicked at: {evt.index}")
+    print(f"🖱️ Clicked at: {evt.index}")
 
     try:
         input_point = np.array([[evt.index[0], evt.index[1]]])
@@ -98,7 +99,8 @@ def on_click(evt: gr.SelectData):
         best_mask = masks[0]
         state.mask = best_mask.astype(np.uint8) * 255
 
-        # 可视 ?        overlay = state.first_frame.copy()
+        # 可视化
+        overlay = state.first_frame.copy()
         red_map = np.zeros_like(overlay)
         red_map[:, :, 0] = 255
 
@@ -114,24 +116,26 @@ def on_click(evt: gr.SelectData):
         return overlay
 
     except Exception as e:
-        print(f" ?SAM Prediction Error: {e}")
+        print(f"❌ SAM Prediction Error: {e}")
         return state.first_frame
 
 @torch.no_grad()
 def run_tracking(progress=gr.Progress()):
     if state.mask is None or state.cap is None:
-        return None, " ?Error: No mask or video loaded."
+        return None, "❌ Error: No mask or video loaded."
 
     print("🚀 Starting XMem Tracking Pipeline...")
 
-    # 性能监控初始 ?    start_time = time.time()
+    # 性能监控初始化
+    start_time = time.time()
     torch.cuda.reset_peak_memory_stats()
 
     # 显存清理
     torch.cuda.empty_cache()
     gc.collect()
 
-    # 初始化推理核 ?    processor = InferenceCore(network, config={
+    # 初始化推理核心
+    processor = InferenceCore(network, config={
         'enable_long_term': True,
         'enable_short_term': True,
         'enable_long_term_count_usage': True,
@@ -166,7 +170,11 @@ def run_tracking(progress=gr.Progress()):
     total_frames = int(state.cap.get(cv2.CAP_PROP_FRAME_COUNT))
 
     # 尝试使用浏览器兼容性更好的编码
-    # H.264 (avc1) > VP9 (vp09) > MP4V (兼容性最差但无需额外 ?\r\n    # ȷ   output Ŀ¼    \r\n    os.makedirs("output", exist_ok=True)\r\n    output_path = "output/tracking_result.mp4"
+    # H.264 (avc1) > VP9 (vp09) > MP4V (兼容性最差但无需额外库)
+    # 确保 output 目录存在
+    os.makedirs("output", exist_ok=True)
+    output_path = "output/tracking_result.mp4"
+    
     codecs_to_try = ['avc1', 'vp09', 'mp4v']
     writer = None
 
@@ -175,7 +183,7 @@ def run_tracking(progress=gr.Progress()):
             fourcc = cv2.VideoWriter_fourcc(*codec)
             writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
             if writer.isOpened():
-                print(f" ?Using video codec: {codec}")
+                print(f"✅ Using video codec: {codec}")
                 break
         except:
             continue
@@ -231,9 +239,9 @@ def run_tracking(progress=gr.Progress()):
     max_mem = torch.cuda.max_memory_allocated() / (1024 ** 2) # MB
 
     metrics_str = (
-        f" ?Tracking Completed!\n"
+        f"✅ Tracking Completed!\n"
         f"⏱️ Total Time: {total_time:.2f} s\n"
-        f"🎞 ?Total Frames: {total_frames}\n"
+        f"🎞️ Total Frames: {total_frames}\n"
         f"🚀 Average FPS: {avg_fps:.2f} fps\n"
         f"💾 Peak GPU Memory: {max_mem:.2f} MB"
     )
@@ -256,9 +264,9 @@ with gr.Blocks(title="SAM_Xmem Tracker (TensoRT优化)") as demo:
         with gr.Column():
             gr.Markdown("### 2. 结果预览")
             mask_preview = gr.Image(label="Mask 预览", interactive=False)
-            track_btn = gr.Button("🚀 开始追 ?(保留原画 ?", variant="primary")
+            track_btn = gr.Button("🚀 开始追踪 (保留原画质)", variant="primary")
 
-            # 输出区域：视 ?+ 指标
+            # 输出区域：视频 + 指标
             video_out = gr.Video(label="追踪结果")
             metrics_out = gr.Textbox(label="性能指标 (Performance Metrics)", lines=5)
 
@@ -266,6 +274,7 @@ with gr.Blocks(title="SAM_Xmem Tracker (TensoRT优化)") as demo:
     video_in.upload(on_video_upload, inputs=video_in, outputs=click_img)
     click_img.select(on_click, inputs=None, outputs=mask_preview)
 
+    # 修改：同时输出 视频 和 指标文本
     track_btn.click(run_tracking, inputs=None, outputs=[video_out, metrics_out])
 
 if __name__ == "__main__":
