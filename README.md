@@ -1,278 +1,278 @@
 # SAM_XMem_TensorRT
 
-A high-performance video object tracking system that combines SAM (Segment Anything Model) and XMem (Extended Memory) with TensorRT optimization for real-time video object segmentation and tracking.
+这是一个高性能的视频对象追踪系统，结合了 SAM (Segment Anything Model) 和 XMem (Extended Memory)，并利用 TensorRT 进行优化，实现了实时的视频对象分割和追踪。
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
 [![CUDA](https://img.shields.io/badge/CUDA-11.0+-green.svg)](https://developer.nvidia.com/cuda-toolkit)
 
-## 🎯 Overview
+## 🎯 概述
 
-This project integrates two powerful AI models to provide an intuitive and efficient video object tracking solution:
+本项目集成了两个强大的 AI 模型，提供直观且高效的视频对象追踪解决方案：
 
-- **SAM (Segment Anything Model)**: Used for initial object selection via point-click interaction
-- **XMem (Extended Memory)**: Handles temporal video object segmentation with memory-efficient tracking
-- **TensorRT Optimization**: Accelerates inference for real-time performance
+- **SAM (Segment Anything Model)**：用于通过点击交互进行初始对象选择
+- **XMem (Extended Memory)**：处理时序视频对象分割，具有高效的记忆机制
+- **TensorRT 优化**：加速推理以实现实时性能
 
-The system allows users to simply click on an object in the first frame of a video, and the AI will automatically track and segment that object throughout the entire video sequence.
+用户只需在视频的第一帧中点击一个对象，AI 就会自动在整个视频序列中追踪并分割该对象。
 
 ---
 
-## 📖 What is SAM (Segment Anything Model)?
+## 📖 什么是 SAM (Segment Anything Model)？
 
-### Overview
-**SAM** is a groundbreaking foundation model for image segmentation developed by Meta AI Research. Released in April 2023, it represents a major breakthrough in computer vision by enabling zero-shot segmentation of any object in any image.
+### 概述
+**SAM** 是由 Meta AI Research 开发的图像分割基础模型。它于 2023 年 4 月发布，代表了计算机视觉领域的重大突破，能够对任何图像中的任何对象进行零样本分割。
 
-### Key Features
-- **Promptable Segmentation**: Can segment objects based on various prompts:
-  - Point clicks (foreground/background)
-  - Bounding boxes
-  - Text descriptions
-  - Mask inputs
+### 主要特性
+- **提示式分割 (Promptable Segmentation)**：可以基于各种提示分割对象：
+  - 点击 (前景/背景)
+  - 边界框
+  - 文本描述
+  - 掩码输入
   
-- **Zero-Shot Generalization**: Works on objects and image domains it has never seen during training
+- **零样本泛化 (Zero-Shot Generalization)**：适用于训练期间从未见过的对象和图像领域
 
-- **Real-Time Performance**: Despite its size (~600M parameters for ViT-H), optimized versions run at interactive speeds
+- **实时性能**：尽管模型巨大 (ViT-H 约 6 亿参数)，优化版本仍能以交互速度运行
 
-### Architecture
-SAM consists of three main components:
+### 架构
+SAM 包含三个主要组件：
 
-1. **Image Encoder** (ViT-based)
-   - Processes the input image to create image embeddings
-   - Uses Vision Transformer (ViT) architecture
-   - In this project, we use **ViT-B (Base)** variant for balance between speed and accuracy
+1. **图像编码器 (Image Encoder)** (基于 ViT)
+   - 处理输入图像以生成图像嵌入
+   - 使用 Vision Transformer (ViT) 架构
+   - 本项目使用 **ViT-B (Base)** 变体，以平衡速度和精度
    
-2. **Prompt Encoder**
-   - Encodes user prompts (points, boxes, masks, text) into embedding vectors
-   - Supports multiple prompt types simultaneously
+2. **提示编码器 (Prompt Encoder)**
+   - 将用户提示 (点、框、掩码、文本) 编码为嵌入向量
+   - 同时支持多种提示类型
    
-3. **Mask Decoder**
-   - Lightweight decoder that combines image and prompt embeddings
-   - Generates high-quality segmentation masks
-   - Can produce multiple mask candidates with confidence scores
+3. **掩码解码器 (Mask Decoder)**
+   - 轻量级解码器，结合图像和提示嵌入
+   - 生成高质量的分割掩码
+   - 可生成带有置信度分数的多个候选掩码
 
-### Why SAM for Video Tracking?
-In this project, SAM serves as the **initialization module**:
-- **User-Friendly**: Simple point-click interface for object selection
-- **Accurate**: Produces high-quality initial masks even for complex objects
-- **Fast**: With TensorRT optimization, encoder runs only once per video
-- **Flexible**: Works on any object without training or fine-tuning
+### 为什么在视频追踪中使用 SAM？
+在本项目中，SAM 作为**初始化模块**：
+- **用户友好**：简单的点击界面进行对象选择
+- **精准**：即使对于复杂的对象也能生成高质量的初始掩码
+- **快速**：配合 TensorRT 优化，编码器每段视频仅运行一次
+- **灵活**：无需训练或微调即可适用于任何对象
 
-### SAM in Our Pipeline
+### 我们流程中的 SAM
 ```
-User clicks object → SAM Encoder processes first frame → 
-SAM Decoder generates mask → Mask passed to XMem for tracking
+用户点击对象 → SAM 编码器处理第一帧 → 
+SAM 解码器生成掩码 → 掩码传递给 XMem 进行追踪
 ```
 
 ---
 
-## 📖 What is XMem (Extended Memory)?
+## 📖 什么是 XMem (Extended Memory)？
 
-### Overview
-**XMem** is a state-of-the-art video object segmentation (VOS) model developed by researchers at UIUC and Adobe Research. Published in ECCV 2022, XMem introduces an innovative memory mechanism that efficiently handles long videos while maintaining high segmentation quality.
+### 概述
+**XMem** 是由 UIUC 和 Adobe Research 研究人员开发的最先进的视频对象分割 (VOS) 模型。发表于 ECCV 2022，XMem 引入了一种创新的记忆机制，在保持高分割质量的同时高效处理长视频。
 
-### Key Innovation: Atkinson-Shiffrin Memory Model
-XMem draws inspiration from human memory psychology, implementing a three-tier memory system:
+### 核心创新：Atkinson-Shiffrin 记忆模型
+XMem 从人类记忆心理学中汲取灵感，实现了一个三级记忆系统：
 
-1. **Sensory Memory (Working Memory)**
-   - Stores the most recent frame
-   - Enables immediate context for tracking
+1. **感觉记忆 (工作记忆)**
+   - 存储最近的一帧
+   - 提供追踪的即时上下文
    
-2. **Short-Term Memory (STM)**
-   - Retains recent frames (configurable, typically 5-10 frames)
-   - Provides temporal consistency
-   - Updated frequently
+2. **短期记忆 (STM)**
+   - 保留最近的几帧 (可配置，通常 5-10 帧)
+   - 提供时间一致性
+   - 频繁更新
    
-3. **Long-Term Memory (LTM)**
-   - Stores key frames from the entire video history
-   - Enables long-range temporal reasoning
-   - Consolidated from short-term memory
-   - Prevents "forgetting" over long sequences
+3. **长期记忆 (LTM)**
+   - 存储整个视频历史中的关键帧
+   - 实现长距离的时间推理
+   - 从短期记忆中整合而来
+   - 防止在长序列中“遗忘”
 
-### Technical Architecture
+### 技术架构
 
-#### Memory Management
+#### 记忆管理
 ```
-Frame t → Query Features → 
+帧 t → 查询特征 → 
   ↓
-Match against:
-  - Working Memory (frame t-1)
-  - Short-Term Memory (recent 5-10 frames)  
-  - Long-Term Memory (key historical frames)
+匹配：
+  - 工作记忆 (帧 t-1)
+  - 短期记忆 (最近 5-10 帧)  
+  - 长期记忆 (历史关键帧)
   ↓
-Generate Segmentation Mask
+生成分割掩码
 ```
 
-#### Key Components
-- **Feature Extractor**: Extracts visual features from video frames
-- **Memory Reader**: Retrieves relevant information from memory banks
-- **Memory Writer**: Updates memory with new information
-- **Decoder**: Generates final segmentation masks
+#### 关键组件
+- **特征提取器**：从视频帧中提取视觉特征
+- **记忆读取器**：从记忆库中检索相关信息
+- **记忆写入器**：用新信息更新记忆
+- **解码器**：生成最终的分割掩码
 
-### Advantages of XMem
+### XMem 的优势
 
-1. **Long Video Capability**
-   - Can process videos of arbitrary length
-   - Memory usage remains bounded through intelligent consolidation
-   - Doesn't suffer from "drift" or "forgetting" like traditional methods
+1. **长视频能力**
+   - 可以处理任意长度的视频
+   - 通过智能整合保持内存使用受限
+   - 不会像传统方法那样遭受“漂移”或“遗忘”
 
-2. **High Accuracy**
-   - State-of-the-art performance on VOS benchmarks (DAVIS, YouTube-VOS)
-   - Handles occlusions, fast motion, and appearance changes
+2. **高精度**
+   - 在 VOS 基准测试 (DAVIS, YouTube-VOS) 上表现出色
+   - 处理遮挡、快速运动和外观变化
 
-3. **Efficiency**
-   - Smart memory consolidation prevents unbounded memory growth
-   - Optimized for GPU acceleration
-   - Frame-by-frame processing with minimal overhead
+3. **高效性**
+   - 智能记忆整合防止内存无限增长
+   - 针对 GPU 加速进行了优化
+   - 逐帧处理，开销极小
 
-4. **Robustness**
-   - Handles multiple objects simultaneously
-   - Recovers from temporary occlusions
-   - Adapts to appearance changes over time
+4. **鲁棒性**
+   - 同时处理多个对象
+   - 从暂时遮挡中恢复
+   - 适应随时间变化的外观
 
-### XMem Configuration in Our System
+### 系统中的 XMem 配置
 ```python
 config = {
-    'enable_long_term': True,           # Enable LTM for long videos
-    'enable_short_term': True,          # Enable STM for temporal consistency
-    'min_mid_term_frames': 5,           # Min frames in STM
-    'max_mid_term_frames': 10,          # Max frames in STM
-    'max_long_term_elements': 10000,    # LTM capacity
-    'mem_every': 5,                     # Update memory every 5 frames
-    'top_k': 30,                        # Top-k matching for efficiency
+    'enable_long_term': True,           # 启用 LTM 以支持长视频
+    'enable_short_term': True,          # 启用 STM 以保持时间一致性
+    'min_mid_term_frames': 5,           # STM 最小帧数
+    'max_mid_term_frames': 10,          # STM 最大帧数
+    'max_long_term_elements': 10000,    # LTM 容量
+    'mem_every': 5,                     # 每 5 帧更新一次记忆
+    'top_k': 30,                        # Top-k 匹配以提高效率
 }
 ```
 
 ---
 
-## 🚀 Why TensorRT Optimization?
+## 🚀 为什么要进行 TensorRT 优化？
 
-**TensorRT** is NVIDIA's high-performance deep learning inference optimizer and runtime. In this project:
+**TensorRT** 是 NVIDIA 的高性能深度学习推理优化器和运行时。在本项目中：
 
-- **SAM Encoder/Decoder**: Converted to TensorRT engines for faster inference
-- **Speed Improvement**: 2-5x faster than PyTorch implementation
-- **Memory Efficiency**: Optimized kernel fusion and memory allocation
-- **Compatibility**: Runs on NVIDIA GPUs (RTX 2060 and above recommended)
+- **SAM 编码器/解码器**：转换为 TensorRT 引擎以加快推理速度
+- **速度提升**：比 PyTorch 实现快 2-5 倍
+- **显存效率**：优化的算子融合和显存分配
+- **兼容性**：在 NVIDIA GPU (推荐 RTX 2060 及以上) 上运行
 
-### TensorRT Models in This Project
-- `sam_vit_b_encoder.engine`: Optimized SAM image encoder
-- `sam_vit_b_decoder.engine`: Optimized SAM mask decoder
-- Both converted from ONNX format for maximum compatibility
+### 本项目中的 TensorRT 模型
+- `sam_vit_b_encoder.engine`：优化的 SAM 图像编码器
+- `sam_vit_b_decoder.engine`：优化的 SAM 掩码解码器
+- 两者均从 ONNX 格式转换而来，以获得最大兼容性
 
 ---
 
-## 🔧 Installation
+## 🔧 安装
 
-### Prerequisites
-- Python 3.8 or higher
-- CUDA 11.0 or higher
-- NVIDIA GPU with 8GB+ VRAM (RTX 3060 or better recommended)
+### 前置要求
+- Python 3.8 或更高版本
+- CUDA 11.0 或更高版本
+- NVIDIA GPU，显存 8GB+ (推荐 RTX 3060 或更好)
 - TensorRT 8.0+
 
-### Step 1: Clone Repository
+### 第一步：克隆仓库
 ```bash
 git clone https://github.com/EscoffierZhou/SAM_XMem_TensorRT.git
 cd SAM_XMem_TensorRT
 ```
 
-### Step 2: Install Dependencies
+### 第二步：安装依赖
 ```bash
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
 pip install gradio opencv-python numpy pillow
 pip install segment-anything
 ```
 
-### Step 3: Download Models
-Download the pre-trained models:
+### 第三步：下载模型
+下载预训练模型：
 - **SAM ViT-B**: `sam_vit_b_01ec64.pth` (375MB)
 - **XMem**: `XMem.pth` (249MB)
 
-Place them in the project root directory.
+将它们放在项目根目录下。
 
-### Step 4: Convert to TensorRT (Optional)
-If you want to build TensorRT engines yourself:
+### 第四步：转换为 TensorRT (可选)
+如果你想自己构建 TensorRT 引擎：
 ```bash
 python export_sam_encoder.py
 python export_sam_decoder.py
 ```
 
-This will generate:
+这将生成：
 - `sam_vit_b_encoder.engine`
 - `sam_vit_b_decoder.engine`
 
 ---
 
-## 💻 Usage
+## 💻 使用方法
 
-### Web Interface (Recommended)
-Launch the Gradio web interface:
+### Web 界面 (推荐)
+启动 Gradio Web 界面：
 ```bash
 python app.py
 ```
 
-Then open your browser to `http://localhost:7860`
+然后在浏览器中打开 `http://localhost:7860`
 
-### Workflow
-1. **Upload Video**: Click "上传视频" to upload your video file
-2. **Select Object**: Click on the object you want to track in the first frame
-3. **Start Tracking**: Click "🚀 开始追踪" to process the entire video
-4. **Download Result**: The tracked video will be saved to `output/tracking_result.mp4`
+### 工作流程
+1. **上传视频**：点击“上传视频”上传你的视频文件
+2. **选择对象**：在第一帧中点击你想追踪的对象
+3. **开始追踪**：点击“🚀 开始追踪”处理整个视频
+4. **下载结果**：追踪后的视频将保存在 `output/tracking_result.mp4`
 
-### Performance Tips
-- For 8GB VRAM: Process videos at 720p or lower
-- Enable memory optimization via `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True`
-- Clear cache every 20 frames (already implemented in code)
+### 性能提示
+- 对于 8GB 显存：处理 720p 或更低分辨率的视频
+- 通过 `PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True` 启用显存优化
+- 每 20 帧清理一次缓存 (代码中已实现)
 
 ---
 
-## 📁 Project Structure
+## 📁 项目结构
 
 ```
 SAM_XMem_TensorRT/
-├── app.py                          # Gradio web interface
-├── export_sam_encoder.py           # SAM encoder to ONNX/TRT
-├── export_sam_decoder.py           # SAM decoder to ONNX/TRT
-├── XMem/                           # XMem source code
+├── app.py                          # Gradio Web 界面
+├── export_sam_encoder.py           # SAM 编码器转 ONNX/TRT
+├── export_sam_decoder.py           # SAM 解码器转 ONNX/TRT
+├── XMem/                           # XMem 源代码
 │   ├── model/
-│   │   └── network.py              # XMem network architecture
+│   │   └── network.py              # XMem 网络架构
 │   └── inference/
-│       └── inference_core.py       # XMem inference engine
-├── models/                         # Additional model files
-├── output/                         # Output directory for results
-├── src/                            # C++ source files (optional)
-├── include/                        # C++ headers (optional)
-├── CMakeLists.txt                  # CMake build configuration
-├── sam_vit_b_01ec64.pth            # SAM pretrained weights
-├── XMem.pth                        # XMem pretrained weights
-├── sam_vit_b_encoder.engine        # TensorRT optimized encoder
-├── sam_vit_b_decoder.engine        # TensorRT optimized decoder
-├── sam_vit_b_encoder.onnx          # ONNX intermediate format
-└── sam_vit_b_decoder.onnx          # ONNX intermediate format
+│       └── inference_core.py       # XMem 推理引擎
+├── models/                         # 额外模型文件
+├── output/                         # 结果输出目录
+├── src/                            # C++ 源文件 (可选)
+├── include/                        # C++ 头文件 (可选)
+├── CMakeLists.txt                  # CMake 构建配置
+├── sam_vit_b_01ec64.pth            # SAM 预训练权重
+├── XMem.pth                        # XMem 预训练权重
+├── sam_vit_b_encoder.engine        # TensorRT 优化编码器
+├── sam_vit_b_decoder.engine        # TensorRT 优化解码器
+├── sam_vit_b_encoder.onnx          # ONNX 中间格式
+└── sam_vit_b_decoder.onnx          # ONNX 中间格式
 ```
 
 ---
 
-## ⚡ Performance Benchmarks
+## ⚡ 性能基准
 
-Tested on **NVIDIA RTX 3060 (8GB VRAM)** with 720p video:
+在 **NVIDIA RTX 3060 (8GB 显存)** 上使用 720p 视频测试：
 
-| Metric | Value |
+| 指标 | 数值 |
 |--------|-------|
-| **Average FPS** | 15-25 fps |
-| **Peak GPU Memory** | 6.5 GB |
-| **Encoder Time (first frame)** | ~200ms |
-| **Per-frame Processing** | ~40-60ms |
+| **平均 FPS** | 15-25 fps |
+| **峰值 GPU 显存** | 6.5 GB |
+| **编码器时间 (第一帧)** | ~200ms |
+| **每帧处理时间** | ~40-60ms |
 
-### Comparison: PyTorch vs TensorRT
-| Model Component | PyTorch | TensorRT | Speedup |
+### 对比：PyTorch vs TensorRT
+| 模型组件 | PyTorch | TensorRT | 加速比 |
 |----------------|---------|----------|---------|
-| SAM Encoder | ~500ms | ~200ms | **2.5x** |
-| SAM Decoder | ~80ms | ~30ms | **2.7x** |
-| XMem (per frame) | ~60ms | ~40ms | **1.5x** |
+| SAM 编码器 | ~500ms | ~200ms | **2.5x** |
+| SAM 解码器 | ~80ms | ~30ms | **2.7x** |
+| XMem (每帧) | ~60ms | ~40ms | **1.5x** |
 
 ---
 
-## 🎓 References & Citations
+## 🎓 参考与引用
 
 ### SAM (Segment Anything)
 ```bibtex
@@ -283,8 +283,8 @@ Tested on **NVIDIA RTX 3060 (8GB VRAM)** with 720p video:
   year={2023}
 }
 ```
-- **Paper**: https://arxiv.org/abs/2304.02643
-- **Official Repo**: https://github.com/facebookresearch/segment-anything
+- **论文**: https://arxiv.org/abs/2304.02643
+- **官方仓库**: https://github.com/facebookresearch/segment-anything
 
 ### XMem
 ```bibtex
@@ -295,14 +295,14 @@ Tested on **NVIDIA RTX 3060 (8GB VRAM)** with 720p video:
   year={2022}
 }
 ```
-- **Paper**: https://arxiv.org/abs/2207.07115
-- **Official Repo**: https://github.com/hkchengrex/XMem
+- **论文**: https://arxiv.org/abs/2207.07115
+- **官方仓库**: https://github.com/hkchengrex/XMem
 
 ---
 
-## 🛠️ Requirements
+## 🛠️ 需求
 
-### Python Packages
+### Python 包
 - torch >= 1.13.0
 - torchvision >= 0.14.0
 - opencv-python >= 4.7.0
@@ -311,49 +311,49 @@ Tested on **NVIDIA RTX 3060 (8GB VRAM)** with 720p video:
 - pillow >= 9.0.0
 - segment-anything >= 1.0
 
-### System Requirements
-- **OS**: Linux (Ubuntu 20.04+) or Windows 10/11
-- **GPU**: NVIDIA GPU with CUDA support (8GB+ VRAM)
-- **CUDA**: 11.0 or higher
-- **TensorRT**: 8.0+ (for optimized inference)
-- **RAM**: 16GB+ recommended
+### 系统要求
+- **操作系统**: Linux (Ubuntu 20.04+) 或 Windows 10/11
+- **GPU**: 支持 CUDA 的 NVIDIA GPU (8GB+ 显存)
+- **CUDA**: 11.0 或更高版本
+- **TensorRT**: 8.0+ (用于优化推理)
+- **内存**: 推荐 16GB+
 
 ---
 
-## 📝 License
+## 📝 许可证
 
-This project is for research and educational purposes. Please refer to the original licenses of SAM and XMem for commercial use.
+本项目仅供研究和教育用途。商业用途请参考 SAM 和 XMem 的原始许可证。
 
 - **SAM**: Apache 2.0 License
 - **XMem**: Apache 2.0 License
 
 ---
 
-## 🙏 Acknowledgments
+## 🙏 致谢
 
-- Meta AI Research for the incredible SAM model
-- Ho Kei Cheng and Alexander G. Schwing for XMem
-- NVIDIA for TensorRT optimization tools
-- The open-source community for various tools and libraries
+- 感谢 Meta AI Research 提供的惊人 SAM 模型
+- 感谢 Ho Kei Cheng 和 Alexander G. Schwing 开发的 XMem
+- 感谢 NVIDIA 提供的 TensorRT 优化工具
+- 感谢开源社区提供的各种工具和库
 
 ---
 
-## 📧 Contact
+## 📧 联系方式
 
-For questions, issues, or collaboration:
-- **Email**: 3416270780@qq.com
+如有问题、议题或合作：
+- **邮箱**: 3416270780@qq.com
 - **GitHub**: https://github.com/EscoffierZhou/SAM_XMem_TensorRT
 
 ---
 
-## 🚧 Future Improvements
+## 🚧 未来改进
 
-- [ ] Support for multi-object tracking
-- [ ] Real-time streaming mode
-- [ ] Mobile deployment (ONNX Runtime / TensorRT for Jetson)
-- [ ] Interactive mask refinement
-- [ ] Automatic keyframe selection optimization
-- [ ] Support for higher resolution videos (1080p+)
+- [ ] 支持多对象追踪
+- [ ] 实时流媒体模式
+- [ ] 移动端部署 (ONNX Runtime / Jetson 上的 TensorRT)
+- [ ] 交互式掩码细化
+- [ ] 自动关键帧选择优化
+- [ ] 支持更高分辨率视频 (1080p+)
 
 ---
 
