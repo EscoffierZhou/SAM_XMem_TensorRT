@@ -1,0 +1,10 @@
+# 找到路径后 (假设是 /usr/src/tensorrt/bin/trtexec)
+/usr/src/tensorrt/bin/trtexec \
+    --onnx=sam_vit_b_encoder.onnx \
+    --saveEngine=sam_vit_b_encoder.engine \
+    --fp16 \
+    --inputIOFormats=fp16:chw \
+    --outputIOFormats=fp16:chw \
+    --minShapes=input_image:1x3x1024x1024 \
+    --optShapes=input_image:1x3x1024x1024 \
+    --maxShapes=input_image:1x3x1024x1024

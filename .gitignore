@@ -1,0 +1,13 @@
+# Models
+*.pth
+*.onnx
+*.engine
+*.data
+
+# Build
+build/
+cmake-build-debug/
+__pycache__/
+
+# Videos
+*.mp4

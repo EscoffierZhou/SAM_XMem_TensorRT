@@ -1,0 +1,13 @@
+escoffierzhou_0523@hiiragi-ansuke:/mnt/f/desktop/Object_Track/SAM_XMem_TensorRT$
+
+ # 1. 既然文件夹已存在，直接进去
+cd build
+
+# 2. 为了防止上次错误的缓存干扰，建议先清理一下
+rm -rf *
+
+# 3. 现在执行 cmake，这时候 .. 指的才是 SAM_XMem_TensorRT
+cmake ..
+
+# 4. 编译
+make

@@ -1,0 +1,1 @@
+escoffierzhou_0523@hiiragi-ansuke:/mnt/f/desktop/Object_Track/SAM_XMem_TensorRT$ ~/opencv_build/venv_fix/bin/pip install onnxscript

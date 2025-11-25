@@ -1,0 +1,3 @@
+cd /mnt/f/desktop/Object_Track/SAM_XMem_TensorRT/build
+
+source venv_build/bin/activate

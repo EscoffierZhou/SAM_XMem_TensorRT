@@ -1,0 +1,25 @@
+cmake .. \
+  -DCMAKE_C_COMPILER=gcc-12 \
+  -DCMAKE_CXX_COMPILER=g++-12 \
+  -DCMAKE_BUILD_TYPE=RELEASE \
+  -DCMAKE_INSTALL_PREFIX=/usr/local \
+  -DOPENCV_EXTRA_MODULES_PATH=~/opencv_build/opencv_contrib-4.8.0/modules \
+  -DWITH_CUDA=ON \
+  -DCUDA_ARCH_BIN="86" \
+  -DWITH_CUDNN=ON \
+  -DOPENCV_DNN_CUDA=ON \
+  -DWITH_CUBLAS=ON \
+  -DBUILD_opencv_world=OFF \
+  -DBUILD_opencv_python3=OFF \
+  -DBUILD_opencv_python2=OFF \
+  -DBUILD_JAVA=OFF \
+  -DBUILD_TESTS=OFF \
+  -DBUILD_PERF_TESTS=OFF \
+  -DBUILD_EXAMPLES=OFF \
+  -DBUILD_opencv_hdf=OFF \
+  -DWITH_PYTHON=OFF \
+  -DOPENCV_SKIP_PYTHON_LOADER=ON \
+  -DPYTHON_DEFAULT_EXECUTABLE=/home/escoffierzhou_0523/opencv_build/venv_fix/bin/python \
+  -DPYTHON3_EXECUTABLE=/home/escoffierzhou_0523/opencv_build/venv_fix/bin/python \
+  -DPYTHON_EXECUTABLE=/home/escoffierzhou_0523/opencv_build/venv_fix/bin/python \
+  -DCMAKE_SYSTEM_IGNORE_PATH="/mnt/f/Anaconda/Library/include;/mnt/f/Anaconda/Library/lib;/mnt/f/Anaconda_backup/Library/include;/mnt/f/Anaconda_backup/Library/lib;/mnt/c/Windows/system32"
