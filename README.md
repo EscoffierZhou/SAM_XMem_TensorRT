@@ -2,8 +2,6 @@
 
 **基于 SAM、XMem 和 TensorRT 的高性能目标跟踪系统**
 
-![Preview](assets/preview.jpg)
-
 ## 🚀 项目概览
 
 本项目集成了 **Segment Anything Model (SAM)** 用于零样本（Zero-Shot）目标初始化，以及 **XMem** 用于高精度的视频目标分割。为了实现实时性能，XMem 模型通过 **TensorRT** 进行了加速，从而在消费级 GPU 上实现高效的长期跟踪。
