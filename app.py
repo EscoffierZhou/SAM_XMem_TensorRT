@@ -1,7 +1,7 @@
 import os
 # === 0. 环境变量优化 ===
 # 开启显存碎片整理，这对 8GB 显存至关重要
-os.environ["PYTORCH_CUDA_ALLOC_CONF"] = "expandable_segments:True"
+os.environ["PYTORCH_ALLOC_CONF"] = "expandable_segments:True"
 
 import sys
 import torch
@@ -157,38 +157,6 @@ def run_tracking(progress=gr.Progress()):
     # 传入第一帧和 Mask
     mask_torch = torch.from_numpy(state.mask > 128).long().to(device)
     processor.set_all_labels([1])
-
-    frame_torch = (torch.from_numpy(state.first_frame).permute(2, 0, 1).float().to(device) / 255.0)
-
-    with torch.autocast("cuda"):
-        processor.step(frame_torch, mask_torch[None, ...])
-
-    # 视频写入设置
-    width = int(state.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    height = int(state.cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-    fps = state.cap.get(cv2.CAP_PROP_FPS)
-    total_frames = int(state.cap.get(cv2.CAP_PROP_FRAME_COUNT))
-
-    # 尝试使用浏览器兼容性更好的编码
-    # H.264 (avc1) > VP9 (vp09) > MP4V (兼容性最差但无需额外库)
-    output_path = "tracking_result.mp4"
-    codecs_to_try = ['avc1', 'vp09', 'mp4v']
-    writer = None
-
-    for codec in codecs_to_try:
-        try:
-            fourcc = cv2.VideoWriter_fourcc(*codec)
-            writer = cv2.VideoWriter(output_path, fourcc, fps, (width, height))
-            if writer.isOpened():
-                print(f"✅ Using video codec: {codec}")
-                break
-        except:
-            continue
-
-    if writer is None or not writer.isOpened():
-        print("⚠️ Failed to initialize preferred codecs, falling back to default mp4v")
-        writer = cv2.VideoWriter(output_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-
     state.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
 
     # 处理循环
@@ -276,4 +244,4 @@ with gr.Blocks(title="SAM_Xmem Tracker (TensoRT优化)") as demo:
 
 if __name__ == "__main__":
     # 允许局域网访问
-    demo.launch(server_name="0.0.0.0", server_port=7860)
+    demo.launch(server_name="0.0.0.0")
